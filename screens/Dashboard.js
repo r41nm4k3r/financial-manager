@@ -1,124 +1,102 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import { useTheme } from '@react-navigation/native';
-import { FontAwesome5 } from 'react-native-vector-icons';
+import React, { useState, useCallback } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFocusEffect } from '@react-navigation/native';
-import Footer from '../components/Footer';
 
 const Dashboard = ({ navigation }) => {
-  const { colors } = useTheme();
-  const [balance, setBalance] = useState(0);
+  const [totalBudget, setTotalBudget] = useState(0);
 
+  // Function to fetch and calculate the total budget
+  const fetchTotalBudget = async () => {
+    try {
+      const transactions = await AsyncStorage.getItem('transactions');
+      const parsedTransactions = transactions ? JSON.parse(transactions) : [];
+
+      // Calculate total budget
+      let income = 0;
+      let expense = 0;
+      parsedTransactions.forEach((transaction) => {
+        if (transaction.type === 'Income') {
+          income += parseFloat(transaction.amount);
+        } else if (transaction.type === 'Expense') {
+          expense += parseFloat(transaction.amount);
+        }
+      });
+
+      setTotalBudget(income - expense); // Update total budget
+    } catch (error) {
+      console.error('Error fetching transactions:', error);
+    }
+  };
+
+  // Use focus effect to refresh budget when Dashboard gains focus
   useFocusEffect(
-    React.useCallback(() => {
-      const fetchBalance = async () => {
-  try {
-    const existingTransactions = await AsyncStorage.getItem('transactions');
-    const transactions = existingTransactions ? JSON.parse(existingTransactions) : [];
-    const totalBalance = transactions.reduce((total, transaction) => {
-      return transaction.type === 'Income'
-        ? total + transaction.amount
-        : total - transaction.amount;
-    }, 0);
-
-    setBalance(totalBalance);
-  } catch (error) {
-    console.error('Error fetching balance:', error);
-  }
-};
-
-      fetchBalance();
+    useCallback(() => {
+      fetchTotalBudget();
     }, [])
   );
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <View style={styles.header}>
-        <FontAwesome5 name="wallet" size={30} color={colors.primary} />
-        <Text style={[styles.title, { color: colors.text }]}>Dashboard</Text>
+    <View style={styles.container}>
+      {/* Total Budget Card */}
+      <View style={styles.card}>
+        <Text style={styles.cardTitle}>Total Budget</Text>
+        <Text style={styles.cardAmount}>${totalBudget.toFixed(2)}</Text>
       </View>
-      <View style={[styles.balanceCard, { backgroundColor: colors.card }]}>
-        <Text style={[styles.balanceText, { color: colors.text }]}>Total Balance</Text>
-        <Text style={[styles.balanceAmount, { color: colors.primary }]}>
-          ${balance.toFixed(2)}
-        </Text>
-      </View>
-      <View style={styles.buttonContainer}>
-        <TouchableOpacity
-          style={[styles.button, { backgroundColor: colors.primary }]}
-          onPress={() => navigation.navigate('Add Transaction')}
-        >
-          <FontAwesome5 name="plus" size={20} color={colors.background} />
-          <Text style={styles.buttonText}>Add Transaction</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.button, { backgroundColor: colors.primary }]}
-          onPress={() => navigation.navigate('Transactions')}
-        >
-          <FontAwesome5 name="list" size={20} color={colors.background} />
-          <Text style={styles.buttonText}>View Transactions</Text>
-        </TouchableOpacity>
-      </View>
-      <Footer />
+
+      {/* Buttons */}
+      <TouchableOpacity
+        style={styles.button}
+        onPress={() => navigation.navigate('AddTransactionStack')}
+      >
+        <Text style={styles.buttonText}>Add Transaction</Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity
+        style={styles.button}
+        onPress={() => navigation.navigate('Transactions')}
+      >
+        <Text style={styles.buttonText}>View Transactions</Text>
+      </TouchableOpacity>
     </View>
   );
 };
 
-// Styles remain the same as before
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
     padding: 20,
   },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
+  card: {
+    width: '90%',
+    padding: 20,
+    backgroundColor: '#4CAF50',
+    borderRadius: 10,
     marginBottom: 20,
   },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    marginLeft: 10,
-  },
-  balanceCard: {
-    padding: 20,
-    borderRadius: 10,
-    elevation: 4, // Shadow for Android
-    shadowColor: '#000', // Shadow for iOS
-    shadowOpacity: 0.2,
-    shadowOffset: { width: 0, height: 4 },
-    shadowRadius: 4,
-    alignItems: 'center',
-  },
-  balanceText: {
+  cardTitle: {
     fontSize: 18,
-    marginBottom: 10,
+    color: '#fff',
   },
-  balanceAmount: {
-    fontSize: 32,
+  cardAmount: {
+    fontSize: 24,
+    color: '#fff',
     fontWeight: 'bold',
-  },
-  buttonContainer: {
-    marginTop: 30,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
   },
   button: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
+    width: '90%',
     padding: 15,
+    backgroundColor: '#FF5722',
     borderRadius: 10,
-    elevation: 2,
-    width: '45%',
+    alignItems: 'center',
+    marginBottom: 10,
   },
   buttonText: {
     fontSize: 16,
-    fontWeight: 'bold',
     color: '#fff',
-    marginLeft: 10,
+    fontWeight: 'bold',
   },
 });
 

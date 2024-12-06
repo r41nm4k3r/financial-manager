@@ -1,34 +1,36 @@
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, Image } from 'react-native';
 import { DrawerContentScrollView, DrawerItemList } from '@react-navigation/drawer';
 import { useTheme } from '@react-navigation/native';
+import Footer from './Footer'; // Adjust the import path if necessary
 
 const CustomDrawerContent = (props) => {
   const { colors } = useTheme();
 
   return (
-    <View style={{ flex: 1 }}>
-      <DrawerContentScrollView {...props}>
-        <DrawerItemList {...props} />
-      </DrawerContentScrollView>
-      <View style={[styles.footer, { backgroundColor: colors.background }]}>
-        <Text style={[styles.copyright, { color: colors.text }]}>
-          © 2024 Your Company
-        </Text>
+    <DrawerContentScrollView {...props}>
+      <View style={styles.logoContainer}>
+        <Image
+          source={require('./assets/logo.png')}
+          style={styles.logo}
+          resizeMode="contain"
+        />
+        <Text style={{ color: colors.text }}>Financial Manager</Text>
       </View>
-    </View>
+      <DrawerItemList {...props} />
+      <Footer /> {/* Add the Footer component here */}
+    </DrawerContentScrollView>
   );
 };
 
 const styles = StyleSheet.create({
-  footer: {
-    padding: 10,
+  logoContainer: {
     alignItems: 'center',
-    justifyContent: 'center',
+    paddingVertical: 20,
   },
-  copyright: {
-    fontSize: 12,
-    textAlign: 'center',
+  logo: {
+    width: 80,
+    height: 80,
   },
 });
 
