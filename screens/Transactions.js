@@ -1,38 +1,58 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
-import { useFocusEffect } from '@react-navigation/native'; // To refetch data when screen is focused
-import Icon from 'react-native-vector-icons/MaterialIcons'; // Ensure this is installed
-import AsyncStorage from '@react-native-async-storage/async-storage'; // AsyncStorage for fetching transactions
+import React, { useState, useEffect } from 'react';
+import {
+  View,
+  Text,
+  FlatList,
+  TouchableOpacity,
+  StyleSheet,
+  ActivityIndicator,
+} from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const Transactions = ({ navigation }) => {
   const [transactions, setTransactions] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // Fetch transactions from AsyncStorage when screen is focused
+  const fetchTransactions = async () => {
+    try {
+      setLoading(true); // Show loading indicator
+      const storedTransactions = await AsyncStorage.getItem('transactions');
+      console.log('Stored Transactions:', storedTransactions); // Debug log
+
+      if (storedTransactions) {
+        const parsedTransactions = JSON.parse(storedTransactions);
+        setTransactions(Array.isArray(parsedTransactions) ? parsedTransactions : []);
+      } else {
+        setTransactions([]); // No transactions found
+      }
+    } catch (error) {
+      console.error('Error fetching transactions:', error);
+      setTransactions([]);
+    } finally {
+      setLoading(false); // Hide loading indicator
+    }
+  };
+
   useFocusEffect(
     React.useCallback(() => {
-      const fetchTransactions = async () => {
-        try {
-          const storedTransactions = await AsyncStorage.getItem('transactions');
-          if (storedTransactions) {
-            setTransactions(JSON.parse(storedTransactions));
-          }
-        } catch (error) {
-          console.error("Failed to load transactions", error);
-        } finally {
-          setLoading(false);
-        }
-      };
-
       fetchTransactions();
     }, [])
   );
 
   const renderItem = ({ item }) => (
-    <View style={styles.transactionCard}>
-      <Text style={styles.transactionText}>{item.category}</Text>
-      <Text style={styles.transactionText}>${item.amount}</Text>
-      <Text style={styles.transactionText}>{item.transactionType}</Text>
+    <View
+      style={[
+        styles.transactionCard,
+        item.transactionType === 'Income' ? styles.income : styles.expense,
+      ]}
+    >
+      <Text style={styles.transactionCategory}>{item.category}</Text>
+      <Text style={styles.transactionAmount}>
+        {item.transactionType === 'Income' ? '+' : '-'}$
+        {parseFloat(item.amount).toFixed(2)}
+      </Text>
+      <Text style={styles.transactionType}>{item.transactionType}</Text>
     </View>
   );
 
@@ -42,6 +62,8 @@ const Transactions = ({ navigation }) => {
 
       {loading ? (
         <ActivityIndicator size="large" color="#4CAF50" />
+      ) : transactions.length === 0 ? (
+        <Text style={styles.noTransactionsText}>No transactions found</Text>
       ) : (
         <FlatList
           data={transactions}
@@ -50,7 +72,6 @@ const Transactions = ({ navigation }) => {
         />
       )}
 
-      {/* Back to Dashboard button */}
       <TouchableOpacity
         style={styles.backButton}
         onPress={() => navigation.navigate('Dashboard')}
@@ -76,14 +97,36 @@ const styles = StyleSheet.create({
   transactionCard: {
     padding: 15,
     borderRadius: 8,
-    backgroundColor: '#f4f4f4',
     marginBottom: 10,
     borderWidth: 1,
     borderColor: '#ccc',
   },
-  transactionText: {
+  income: {
+    backgroundColor: '#e8f5e9', // Light green for income
+    borderColor: '#4CAF50',
+  },
+  expense: {
+    backgroundColor: '#ffebee', // Light red for expense
+    borderColor: '#f44336',
+  },
+  transactionCategory: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 5,
+  },
+  transactionAmount: {
     fontSize: 16,
     marginBottom: 5,
+  },
+  transactionType: {
+    fontSize: 14,
+    color: '#757575',
+  },
+  noTransactionsText: {
+    fontSize: 18,
+    color: '#999',
+    textAlign: 'center',
+    marginTop: 20,
   },
   backButton: {
     padding: 15,

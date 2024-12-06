@@ -31,7 +31,7 @@ const AddTransactionDetails = ({ navigation }) => {
     const newTransaction = {
       category,
       amount: parseFloat(amount),
-      type: transactionType,
+      transactionType: transactionType,
       date: date.toISOString(),
     };
 
